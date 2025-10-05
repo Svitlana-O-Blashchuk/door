@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Ancient Door - Envelope Top (Fixed)</title>
+	<style>
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+		}
+
+		body {
+			background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+			min-height: 100vh;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			font-family: 'Georgia', serif;
+			overflow: hidden;
+		}
+
+		.door-container {
+			position: relative;
+			width: 400px;
+			height: 600px;
+			perspective: 1000px;
+		}
+
+		.door-frame {
+			position: absolute;
+			top: -20px;
+			left: -20px;
+			right: -20px;
+			bottom: -40px;
+			background: linear-gradient(180deg, #1a252f 0%, #2c3e50 100%);
+			border-radius: 20px;
+			z-index: -1;
+			box-shadow: 0 0 50px rgba(0,0,0,0.8);
+		}
+
+		/* Swinging door (front layer) */
+		.door {
+			position: relative;
+			width: 100%;
+			height: 100%;
+			background: linear-gradient(180deg, #2c3e50 0%, #34495e 50%, #2c3e50 100%);
+			border: 8px solid #1a252f;
+			border-radius: 15px 15px 5px 5px;
+			box-shadow:
+				inset 0 0 50px rgba(0,0,0,0.3),
+				0 10px 30px rgba(0,0,0,0.5),
+				0 0 100px rgba(52, 73, 94, 0.2);
+			transition: transform 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+			transform-origin: left center;
+			overflow: hidden;
+			z-index: 10;
+		}
+
+		.door::before {
+			content: '';
+			position: absolute;
+			top: 20px;
+			left: 20px;
+			right: 20px;
+			bottom: 20px;
+			border: 3px solid rgba(139, 111, 71, 0.3);
+			border-radius: 10px;
+			background: linear-gradient(45deg,
+				rgba(52, 73, 94, 0.1) 0%,
+				rgba(44, 62, 80, 0.2) 50%,
+				rgba(52, 73, 94, 0.1) 100%);
+		}
+
+		.door-handle {
+			position: absolute;
+			right: 30px;
+			top: 50%;
+			transform: translateY(-50%);
+			width: 20px;
+			height: 60px;
+			background: linear-gradient(180deg, #8b6f47 0%, #6b5437 100%);
+			border-radius: 10px;
+			box-shadow:
+				inset 0 2px 5px rgba(255,255,255,0.2),
+				0 2px 10px rgba(0,0,0,0.3);
+		}
+
+		.door-handle::before {
+			content: '';
+			position: absolute;
+			right: -8px;
+			top: 50%;
+			transform: translateY(-50%);
+			width: 12px;
+			height: 12px;
+			background: #8b6f47;
+			border-radius: 50%;
+			box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
+		}
+
+		.rune-container {
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			transform: translate(-50%, -50%);
+			width: 120px;
+			height: 120px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			background: radial-gradient(circle, rgba(212, 175, 55, 0.1) 0%, transparent 70%);
+			border-radius: 50%;
+			transition: all 0.3s ease;
+		}
+
+		.rune-image {
+			width: 80px;
+			height: 80px;
+			object-fit: contain;
+			filter: drop-shadow(0 0 10px rgba(212, 175, 55, 0.5));
+			transition: all 0.3s ease;
+		}
+
+		.door.opening {
+			transform: perspective(1000px) rotateY(-80deg);
+		}
+
+		.door.opening .rune-container {
+			opacity: 0;
+		}
+
+		/* Viewport behind the door (clips inside content to the door interior) */
+		.door-viewport {
+			position: absolute;
+			top: 20px;
+			left: 20px;
+			right: 20px;
+			bottom: 20px;
+			border-radius: 10px;
+			overflow: hidden;
+			z-index: 5;
+		}
+
+		/* Envelope text + rugzak pinned near top inside the door */
+		.content-area {
+			position: absolute;
+			top: 48px;              /* fixed offset inside door */
+			left: 50%;
+			transform: translateX(-50%); /* no vertical translate to avoid drifting out */
+			width: 70%;
+			text-align: center;
+			opacity: 0;
+			transition: opacity 0.8s ease;
+			pointer-events: none;
+			z-index: 1;
+		}
+
+		.character-text {
+			color: #d4af37;
+			font-size: 24px;
+			line-height: 1.6;
+			text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+			display: none;
+			padding: 16px 20px;
+			background: linear-gradient(135deg, rgba(26, 26, 46, 0.9) 0%, rgba(22, 33, 62, 0.9) 100%);
+			border: 2px solid rgba(139, 111, 71, 0.3);
+			border-radius: 12px;
+			box-shadow:
+				0 10px 30px rgba(0,0,0,0.5),
+				inset 0 1px 0 rgba(255,255,255,0.1);
+			backdrop-filter: blur(10px);
+		}
+
+		.rugzak-image {
+			display: none;
+			margin-top: 12px;
+			width: 55%;
+			max-width: 220px;
+			height: auto;
+			filter: drop-shadow(0 4px 10px rgba(0,0,0,0.4));
+		}
+
+		/* Center area for the pre-text image (imageN.png) */
+		.image-area {
+			position: absolute;
+			top: 58%;
+			left: 50%;
+			transform: translate(-50%, -50%);
+			width: 70%;
+			text-align: center;
+			z-index: 1;
+			pointer-events: none;
+		}
+
+		.character-image {
+			width: 100%;
+			max-width: 300px;
+			height: auto;
+			border-radius: 0;
+			display: none;
+		}
+
+		.content-area.show {
+			opacity: 1;
+		}
+
+		.click-overlay {
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			cursor: pointer;
+			z-index: 20;
+		}
+
+		@media (max-width: 768px) {
+			.door-container {
+				width: 300px;
+				height: 450px;
+			}
+
+			.content-area {
+				width: 75%;
+				top: 40px;         /* tighter on mobile */
+				left: 50%;
+				transform: translateX(-50%);
+			}
+
+			.image-area {
+				width: 75%;
+				top: 58%;
+				left: 50%;
+				transform: translate(-50%, -50%);
+			}
+
+			.character-text {
+				font-size: 18px;
+			}
+
+			.rune-container {
+				width: 100px;
+				height: 100px;
+			}
+
+			.rune-image {
+				width: 60px;
+				height: 60px;
+			}
+		}
+	</style>
+</head>
+<body>
+	<div class="door-container">
+		<div class="door-frame"></div>
+
+		<!-- Swinging door (front) -->
+		<div class="door" id="ancientDoor">
+			<div class="door-handle"></div>
+			<div class="rune-container">
+				<img src="rune.png" alt="Ancient Rune" class="rune-image">
+			</div>
+		</div>
+
+		<!-- Interior viewport (behind door) -->
+		<div class="door-viewport" aria-hidden="true">
+			<!-- Top text + rugzak -->
+			<div class="content-area" id="contentArea">
+				<div id="characterText" class="character-text">
+					<p>envelope 1</p>
+				</div>
+				<img id="rugzakImage" class="rugzak-image" src="rugzak.png" alt="Rugzak">
+			</div>
+
+			<!-- Centered image before text -->
+			<div class="image-area">
+				<img id="characterImage" class="character-image" src="image1.png" alt="Character Image">
+			</div>
+		</div>
+
+		<div class="click-overlay" onclick="toggleDoor()"></div>
+
+		<audio id="doorbellAudio" loop>
+			<source src="doorbell.mp3" type="audio/mpeg">
+		</audio>
+
+		<audio id="characterSound">
+			<source src="sound1.mp3" type="audio/mpeg">
+		</audio>
+	</div>
+
+	<script>
+		let textCounter = 1;
+		let audioStarted = false;
+		let questComplete = false;
+		let finalCloseAllowed = false;
+
+		function toggleDoor() {
+			try {
+				const door = document.getElementById('ancientDoor');
+				const contentArea = document.getElementById('contentArea');
+				const characterImage = document.getElementById('characterImage');
+				const characterText = document.getElementById('characterText');
+				const characterSound = document.getElementById('characterSound');
+				const doorbellAudio = document.getElementById('doorbellAudio');
+				const rugzakImage = document.getElementById('rugzakImage');
+
+				if (questComplete && !finalCloseAllowed) return;
+
+				// First click: start doorbell
+			if (!audioStarted) {
+					audioStarted = true;
+					if (doorbellAudio) {
+						doorbellAudio.volume = 0.7;
+						doorbellAudio.play().catch(() => {});
+					}
+					return;
+				}
+
+				if (!door.classList.contains('opening')) {
+					// OPENING
+					door.classList.add('opening');
+					if (doorbellAudio) doorbellAudio.pause();
+
+					contentArea.classList.add('show');
+
+					const imageFile = `image${textCounter}.png`;
+					const soundFile = `sound${textCounter}.mp3`;
+
+					characterImage.src = imageFile;
+					characterSound.src = soundFile;
+
+					// Show image first; hide text and rugzak
+					characterImage.style.display = 'block';
+					characterText.style.display = 'none';
+					if (rugzakImage) rugzakImage.style.display = 'none';
+
+					characterSound.play()
+						.then(() => {})
+						.catch(() => {
+							setTimeout(() => { showText(); }, 3000);
+						});
+
+					characterSound.onended = function() {
+						showText();
+					};
+
+					function showText() {
+						characterImage.style.display = 'none';
+						characterText.innerHTML = `<p>envelope ${textCounter}</p>`;
+						characterText.style.display = 'block';
+						if (rugzakImage) rugzakImage.style.display = 'block';
+					}
+				} else {
+					// CLOSING
+					door.classList.remove('opening');
+					contentArea.classList.remove('show');
+
+					characterImage.style.display = 'none';
+					characterText.style.display = 'none';
+					if (rugzakImage) rugzakImage.style.display = 'none';
+
+					if (textCounter === 7) {
+						questComplete = true;
+						finalCloseAllowed = true;
+					} else {
+						textCounter++;
+					}
+
+					if (questComplete && finalCloseAllowed) {
+						finalCloseAllowed = false;
+						if (doorbellAudio) doorbellAudio.pause();
+					} else {
+						if (doorbellAudio) doorbellAudio.play().catch(() => {});
+					}
+				}
+			} catch (error) {
+				console.error('ERROR in toggleDoor:', error);
+			}
+		}
+
+		window.addEventListener('load', function() {});
+	</script>
+</body>
+</html>
